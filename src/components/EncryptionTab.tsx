@@ -16,7 +16,7 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
   const [isEncrypting, setIsEncrypting] = useState(false);
   const [encryptionProgress, setEncryptionProgress] = useState<EncryptionProgress[]>([]);
   const [completedFiles, setCompletedFiles] = useState<Array<{ file: File; blob: Blob; filename: string }>>([]);
-
+  
   const passwordStrength = calculatePasswordStrength(password);
 
   const handleFilesDrop = useCallback((droppedFiles: File[]) => {
@@ -42,7 +42,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
       });
       return;
     }
-
     if (!password) {
       onLog({
         action: 'error',
@@ -52,7 +51,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
       });
       return;
     }
-
     if (passwordStrength.score < 40) {
       onLog({
         action: 'error',
@@ -62,42 +60,34 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
       });
       return;
     }
-
     setIsEncrypting(true);
     setEncryptionProgress(files.map(file => ({
       filename: file.name,
       progress: 0,
       status: 'pending'
     })));
-
     const newCompletedFiles: Array<{ file: File; blob: Blob; filename: string }> = [];
-
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
-        setEncryptionProgress(prev => prev.map((item, index) => 
+        setEncryptionProgress(prev => prev.map((item, index) =>
           index === i ? { ...item, status: 'processing', progress: 0 } : item
         ));
-
         try {
           const encryptedFile = await encryptFile(file, password, (progress) => {
-            setEncryptionProgress(prev => prev.map((item, index) => 
+            setEncryptionProgress(prev => prev.map((item, index) =>
               index === i ? { ...item, progress } : item
             ));
           });
-
           const blob = createDownloadBlob(encryptedFile);
           newCompletedFiles.push({
             file,
             blob,
             filename: encryptedFile.name
           });
-
-          setEncryptionProgress(prev => prev.map((item, index) => 
+          setEncryptionProgress(prev => prev.map((item, index) =>
             index === i ? { ...item, status: 'completed', progress: 100 } : item
           ));
-
           onLog({
             action: 'encrypt',
             filename: file.name,
@@ -105,14 +95,11 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
             status: 'success',
             message: `Successfully encrypted ${file.name}`
           });
-
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          
-          setEncryptionProgress(prev => prev.map((item, index) => 
+          setEncryptionProgress(prev => prev.map((item, index) =>
             index === i ? { ...item, status: 'error', error: errorMessage } : item
           ));
-
           onLog({
             action: 'encrypt',
             filename: file.name,
@@ -125,6 +112,10 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
     } finally {
       setIsEncrypting(false);
       setCompletedFiles(newCompletedFiles);
+      // Clear progress if all done
+      if (newCompletedFiles.length === files.length) {
+        setEncryptionProgress([]);
+      }
     }
   };
 
@@ -160,12 +151,10 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
           Encrypt your files using military-grade AES-256-GCM encryption
         </p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* File Selection */}
         <div className="space-y-6">
           <FileDropZone onFilesDrop={handleFilesDrop} />
-
           {files.length > 0 && (
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
@@ -180,7 +169,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
-              
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {files.map((file, index) => (
                   <div
@@ -211,14 +199,12 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
             </div>
           )}
         </div>
-
         {/* Encryption Settings */}
         <div className="space-y-6">
           <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Encryption Settings
             </h3>
-            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -246,7 +232,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
                   </div>
                 )}
               </div>
-
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
                   <Lock className="w-5 h-5 text-blue-500 mt-0.5" />
@@ -256,7 +241,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
                   </div>
                 </div>
               </div>
-
               <button
                 onClick={encryptFiles}
                 disabled={files.length === 0 || !password || isEncrypting || passwordStrength.score < 40}
@@ -269,7 +253,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
           </div>
         </div>
       </div>
-
       {/* Encryption Progress */}
       {encryptionProgress.length > 0 && (
         <div className="mt-8 bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
@@ -304,13 +287,12 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
           </div>
         </div>
       )}
-
       {/* Download Section */}
       {completedFiles.length > 0 && (
         <div className="mt-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">
-              Encryption Complete!
+              Encryption Complete! ({completedFiles.length}/{files.length} files)
             </h3>
             <button
               onClick={downloadAllFiles}
@@ -320,7 +302,6 @@ export default function EncryptionTab({ onLog }: EncryptionTabProps) {
               <span>Download All</span>
             </button>
           </div>
-          
           <div className="space-y-2">
             {completedFiles.map((item, index) => (
               <div
